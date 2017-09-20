@@ -1,11 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(pubsub)
 
-# Find includes in corresponding build directories
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-## Allow CMAKE to run Qt MOC
-set(CMAKE_AUTOMOC ON)
-
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
 
@@ -17,9 +12,17 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
 )
 
+# Find and configure QT
 find_package(Qt5 REQUIRED COMPONENTS
   Core
+  Qml
+  Quick
 )
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_AUTOMOC ON)
+
+include_directories( ${CMAKE_BINARY_DIR} )
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -36,14 +39,10 @@ find_package(Qt5 REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  DEPENDS
-    QT
   CATKIN_DEPENDS
     roscpp
     std_msgs
 )
-
-ADD_DEFINITIONS(-DQT_NO_KEYWORDS)
 
 ###########
 ## Build ##
@@ -64,6 +63,17 @@ add_executable(talker src/talker.cpp)
 
 add_executable(listener_qt src/listener_qt.cpp)
 add_executable(talker_qt src/talker_qt.cpp)
+
+# Run MOC
+set(MOC_HDRS include/qml_mediator.h)
+qt5_wrap_cpp(MOC_SRCS ${MOC_HDRS})
+
+# Run RCC
+set(RCC_FILES src/display.qrc)
+qt5_add_resources(RCC_SOURCES ${RCC_FILES})
+
+add_executable(listener_qml src/listener_qml.cpp ${MOC_SRCS} ${RCC_SOURCES})
+add_executable(talker_qml src/talker_qml.cpp ${MOC_SRCS} ${RCC_SOURCES})
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -88,6 +98,20 @@ target_link_libraries(listener_qt
 target_link_libraries(talker_qt
   ${catkin_LIBRARIES}
   Qt5::Core
+)
+
+target_link_libraries(listener_qml
+  ${catkin_LIBRARIES}
+  Qt5::Core
+  Qt5::Qml
+  Qt5::Quick
+)
+
+target_link_libraries(talker_qml
+  ${catkin_LIBRARIES}
+  Qt5::Core
+  Qt5::Qml
+  Qt5::Quick
 )
 
 #############

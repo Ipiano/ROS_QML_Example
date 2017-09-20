@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/qml">
+        <file>line_display.qml</file>
+    </qresource>
+</RCC>
