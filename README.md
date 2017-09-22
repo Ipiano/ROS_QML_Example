@@ -5,7 +5,7 @@ This project was created so that I could work out some workflow kinks when using
 The repo should be pulled into the /src directory of a catkin workspace and built with catkin_make. 
 All the examples are in the ros package 'pubsub'. 
 
-There are three examples in the repo, each consisting of a 'talker' and 'listener' program:
+There are four examples in the repo, each consisting of a 'talker' and 'listener' program:
 * listener/talker
 * listener_qt/talker_qt
 * listener_qml/talker_qml
