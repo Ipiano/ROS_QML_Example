@@ -18,7 +18,6 @@ find_package(Qt5 REQUIRED COMPONENTS
   Qml
   Quick
   Widgets
-  Gui
 )
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -91,8 +90,8 @@ qt5_wrap_ui(UI_SRCS ${UI_FILES})
 
 add_executable(talker_wig src/talker_wig.cpp src/mainwindow.cpp ${MOC_SRCS} ${UI_SRCS})
 add_executable(listener_wig src/listener_wig.cpp src/mainwindow.cpp ${MOC_SRCS} ${UI_SRCS})
-qt5_use_modules(talker_wig Widgets Gui)
-qt5_use_modules(listener_wig Widgets Gui)
+qt5_use_modules(talker_wig Widgets)
+qt5_use_modules(listener_wig Widgets)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
