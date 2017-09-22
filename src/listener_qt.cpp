@@ -2,6 +2,7 @@
 #include "std_msgs/String.h"
 
 #include <QCoreApplication>
+#include <QTimer>
 
 #include <signal.h>
 
@@ -30,6 +31,15 @@ void dataCallback(const std_msgs::String::ConstPtr& msg)
 int main(int argc, char** argv)
 {
     QCoreApplication app(argc, argv);    
+
+    //Timer to periodically check that ros is still alive
+    QTimer rosCheck;
+    rosCheck.setInterval(1000);
+    QObject::connect(&rosCheck, &QTimer::timeout, [&]()
+    {
+        if(!ros::ok()) app.exit();
+    });
+    rosCheck.start();
 
     //Set up ros stuff
     ros::init(argc, argv, "listener");

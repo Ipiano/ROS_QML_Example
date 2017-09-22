@@ -50,6 +50,15 @@ int main(int argc, char** argv)
     QGuiApplication app(argc, argv);
     QMLMediator mediate(&app);
 
+    //Timer to periodically check that ros is still alive
+    QTimer rosCheck;
+    rosCheck.setInterval(1000);
+    QObject::connect(&rosCheck, &QTimer::timeout, [&]()
+    {
+        if(!ros::ok()) app.exit();
+    });
+    rosCheck.start();
+
     //Set up ros stuff
     ros::init(argc, argv, "listener");
     ros::NodeHandle node;

@@ -10,8 +10,14 @@
 #include <QCoreApplication>
 #include <QTimer>
 #include <QObject>
+#include <QGuiApplication>
+#include <QUrl>
+#include <QString>
+#include <QApplication>
 
 #include <signal.h>
+
+#include "mainwindow.h"
 
 using namespace std;
 
@@ -32,8 +38,9 @@ namespace sigint
 
 int main(int argc, char** argv)
 {
-    QCoreApplication app(argc, argv);  
-    
+    QApplication app(argc, argv);
+    MainWindow w;
+
     //Timer to periodically check that ros is still alive
     QTimer rosCheck;
     rosCheck.setInterval(1000);
@@ -52,19 +59,19 @@ int main(int argc, char** argv)
     ros::NodeHandle node;
     ros::Publisher pub = node.advertise<std_msgs::String>("chatter", 1000);
     ros::AsyncSpinner rosspin(1);
-    
+
     //Set up slot for 5 second timer
-    int i=0;    
+    int i=0;
     QObject::connect(&sec5, &QTimer::timeout, [&]()
     {
         std_msgs::String msg;
-        
+
         msg.data = string("Message #" + to_string(i++)).c_str();
-        ROS_INFO("Sending [%s]", msg.data.c_str());
+        w.addTextLine("Sending [" + QString(msg.data.c_str()) + "]");
 
         pub.publish(msg);
     });
-   
+
     //Put pointer to main app into sigint namespace
     //so handler can exit it
     sigint::mainApp = &app;
@@ -73,10 +80,13 @@ int main(int argc, char** argv)
     signal(SIGINT, &sigint::sigint_handler);
 
     //Start ros spinner
-    rosspin.start();    
+    rosspin.start();
 
     //Start timer
     sec5.start();
+
+    //Show main window
+    w.show();
 
     //Start main app
     return app.exec();

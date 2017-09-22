@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
-<package>
+<package format="2">
   <name>pubsub</name>
-  <version>0.0.0</version>
-  <description>The pubsub package</description>
+  <version>0.0.1</version>
+  <description>Example package using QT5 QML in a ROS node</description>
 
   <maintainer email="andrew@stelterfamily.net">ipiano</maintainer>
 
@@ -10,11 +10,8 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <build_depend>roscpp</build_depend>
-  <build_depend>std_msgs</build_depend>
-
-  <run_depend>roscpp</run_depend>
-  <run_depend>std_msgs</run_depend>
+  <depend>roscpp</depend>
+  <depend>std_msgs</depend>
 
   <export>
 

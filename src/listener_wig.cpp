@@ -1,17 +1,18 @@
 #include "ros/ros.h"
 #include "std_msgs/String.h"
 
-#include <thread>
-#include <chrono>
-#include <string>
 #include <functional>
-#include <iostream>
 
 #include <QCoreApplication>
 #include <QTimer>
 #include <QObject>
+#include <QApplication>
+#include <QUrl>
+#include <QString>
 
 #include <signal.h>
+
+#include "mainwindow.h"
 
 using namespace std;
 
@@ -30,10 +31,22 @@ namespace sigint
     }
 }
 
+namespace cb
+{
+    MainWindow* win;
+
+    void dataCallback(const std_msgs::String::ConstPtr& msg)
+    {
+        win->addTextLine("I heard: [" + QString(msg->data.c_str()) + "]");
+    }
+}
+
 int main(int argc, char** argv)
 {
-    QCoreApplication app(argc, argv);  
-    
+    QApplication app(argc, argv);
+    MainWindow w;
+    cb::win = &w;
+
     //Timer to periodically check that ros is still alive
     QTimer rosCheck;
     rosCheck.setInterval(1000);
@@ -43,28 +56,13 @@ int main(int argc, char** argv)
     });
     rosCheck.start();
 
-    //5 second timer to publish
-    QTimer sec5;
-    sec5.setInterval(5000);
-
-    //Init ros stuff
-    ros::init(argc, argv, "talker");
+    //Set up ros stuff
+    ros::init(argc, argv, "listener");
     ros::NodeHandle node;
-    ros::Publisher pub = node.advertise<std_msgs::String>("chatter", 1000);
-    ros::AsyncSpinner rosspin(1);
-    
-    //Set up slot for 5 second timer
-    int i=0;    
-    QObject::connect(&sec5, &QTimer::timeout, [&]()
-    {
-        std_msgs::String msg;
-        
-        msg.data = string("Message #" + to_string(i++)).c_str();
-        ROS_INFO("Sending [%s]", msg.data.c_str());
 
-        pub.publish(msg);
-    });
-   
+    ros::Subscriber sub = node.subscribe("chatter", 1000, cb::dataCallback);
+    ros::AsyncSpinner rosspin(1);
+
     //Put pointer to main app into sigint namespace
     //so handler can exit it
     sigint::mainApp = &app;
@@ -73,11 +71,11 @@ int main(int argc, char** argv)
     signal(SIGINT, &sigint::sigint_handler);
 
     //Start ros spinner
-    rosspin.start();    
+    rosspin.start();
 
-    //Start timer
-    sec5.start();
+    //Show the window
+    w.show();
 
-    //Start main app
+    //Start qt app
     return app.exec();
 }

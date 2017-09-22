@@ -34,3 +34,5 @@ rosrun pubsub listener_qml
 Note: I do not know how to properly resolve the QT dependency with CMake/catkin; I believe this will currently fail to build if you do not have QT 5 installed. (If you know how to do this correctly, please let me know)
 
 Note 2: Yes, I know the namespaceing globals is kind of hacky. The goal was to just make it work
+
+Note 3: The .pro file is there so that one can use QtCreator for modifying the code. It is possible to source qt and have it run catkin make when you build; but it can lead to some strange build errors that don't actually matter, so I don't recommend this unless you know what you're doing
