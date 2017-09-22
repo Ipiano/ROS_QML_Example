@@ -34,7 +34,8 @@ SOURCES += \
     src/talker_qt.cpp
 
 HEADERS += \
-        include/mainwindow.h
+        include/mainwindow.h \
+    include/qml_mediator.h
 
 FORMS += \
         ui/mainwindow.ui

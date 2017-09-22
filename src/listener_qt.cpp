@@ -3,25 +3,11 @@
 
 #include <QCoreApplication>
 #include <QTimer>
-
-#include <signal.h>
+#include <QtConcurrent/QtConcurrent>
+#include <QFuture>
+#include <QFutureWatcher>
 
 using namespace std;
-
-namespace sigint
-{
-    QCoreApplication* mainApp = nullptr;
-
-    void sigint_handler(int code)
-    {
-        ros::shutdown();
-
-        if(mainApp)
-        {
-            mainApp->exit();
-        }
-    }
-}
 
 void dataCallback(const std_msgs::String::ConstPtr& msg)
 {
@@ -30,32 +16,20 @@ void dataCallback(const std_msgs::String::ConstPtr& msg)
 
 int main(int argc, char** argv)
 {
-    QCoreApplication app(argc, argv);    
-
-    //Timer to periodically check that ros is still alive
-    QTimer rosCheck;
-    rosCheck.setInterval(1000);
-    QObject::connect(&rosCheck, &QTimer::timeout, [&]()
-    {
-        if(!ros::ok()) app.exit();
-    });
-    rosCheck.start();
-
-    //Set up ros stuff
+    //Init ros stuff
     ros::init(argc, argv, "listener");
     ros::NodeHandle node;
     ros::Subscriber sub = node.subscribe("chatter", 1000, dataCallback);
-    ros::AsyncSpinner rosspin(1);
 
-    //Put pointer to main app into sigint namespace
-    //so handler can exit it
-    sigint::mainApp = &app;
-    
-    //Register our sigint handler to override the ros one
-    signal(SIGINT, &sigint::sigint_handler);
+    //Init Qt
+    QCoreApplication app(argc, argv);
 
-    //Start ros spinner
-    rosspin.start();
+    //Start ros in separate thread, and trigger Qt shutdown when it exits
+    //If Qt exits before ros, be sure to shutdown ros
+    QFutureWatcher<void> rosThread;
+    rosThread.setFuture(QtConcurrent::run(&ros::spin));
+    QObject::connect(&rosThread, &QFutureWatcher<void>::finished, &app, &QCoreApplication::quit);
+    QObject::connect(&app, &QCoreApplication::aboutToQuit, [](){ros::shutdown();});
 
     //Start qt app
     return app.exec();

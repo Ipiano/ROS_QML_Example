@@ -6,6 +6,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    connect(this, &MainWindow::newString, this, &MainWindow::newStringSlot);
 }
 
 MainWindow::~MainWindow()
@@ -13,7 +14,7 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::addTextLine(QString txt)
+void MainWindow::newStringSlot(QString txt)
 {
     ui->list_lines->addItem(txt);
 }

@@ -13,73 +13,35 @@
 #include <QString>
 #include <QQuickWindow>
 #include <QtQml>
-
-#include <signal.h>
+#include <QtConcurrent/QtConcurrent>
+#include <QFuture>
+#include <QFutureWatcher>
 
 #include "qml_mediator.h"
 
 using namespace std;
 
-namespace sigint
-{
-    QCoreApplication* mainApp = nullptr;
-
-    void sigint_handler(int code)
-    {
-        ros::shutdown();
-
-        if(mainApp)
-        {
-            mainApp->exit();
-        }
-    }
-}
-
-namespace cb
-{
-    QMLMediator* mediate;
-
-    void dataCallback(const std_msgs::String::ConstPtr& msg)
-    {
-        mediate->addString("I heard: [" + QString(msg->data.c_str()) + "]");
-    }
-}
-
 int main(int argc, char** argv)
 {
-    QGuiApplication app(argc, argv);
-    QMLMediator mediate(&app);
-
-    //Timer to periodically check that ros is still alive
-    QTimer rosCheck;
-    rosCheck.setInterval(1000);
-    QObject::connect(&rosCheck, &QTimer::timeout, [&]()
-    {
-        if(!ros::ok()) app.exit();
-    });
-    rosCheck.start();
-
-    //Set up ros stuff
+    //Init ros stuff
     ros::init(argc, argv, "listener");
     ros::NodeHandle node;
 
-    cb::mediate = &mediate;
-    ros::Subscriber sub = node.subscribe("chatter", 1000, cb::dataCallback);
-    ros::AsyncSpinner rosspin(1);
+    //Init Qt
+    QGuiApplication app(argc, argv);
+    QMLMediator mediate(&app);
+    ros::Subscriber sub = node.subscribe("chatter", 1000, &QMLMediator::addString, &mediate);
+
+    //Start ros in separate thread, and trigger Qt shutdown when it exits
+    //If Qt exits before ros, be sure to shutdown ros
+    QFutureWatcher<void> rosThread;
+    rosThread.setFuture(QtConcurrent::run(&ros::spin));
+    QObject::connect(&rosThread, &QFutureWatcher<void>::finished, &app, &QCoreApplication::quit);
+    QObject::connect(&app, &QCoreApplication::aboutToQuit, [](){ros::shutdown();});
 
     QQmlApplicationEngine engine(&app);
     engine.rootContext()->setContextProperty("mediator", &mediate);
     engine.load(QUrl("qrc:///qml/line_display.qml"));    
-
-    //Put pointer to main app into sigint namespace
-    //so handler can exit it
-    sigint::mainApp = &app;
-    
-    //Register our sigint handler to override the ros one
-    signal(SIGINT, &sigint::sigint_handler);
-
-    //Start ros spinner
-    rosspin.start();
 
     //Start qt app
     return app.exec();
