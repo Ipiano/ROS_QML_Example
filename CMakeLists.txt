@@ -5,14 +5,12 @@ project(pubsub)
 add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
 )
 
-# Find and configure QT
+# Find Qt5 libraries
 find_package(Qt5 REQUIRED COMPONENTS
   Core
   Qml
@@ -20,86 +18,29 @@ find_package(Qt5 REQUIRED COMPONENTS
   Widgets
 )
 
+# Configuration to make Qt compiles go smoother
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
-
 include_directories( ${CMAKE_BINARY_DIR} )
 
-## Uncomment this if the package has a setup.py. This macro ensures
-## modules and global scripts declared therein get installed
-## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
-# catkin_python_setup()
-
-###################################
-## catkin specific configuration ##
-###################################
-## The catkin_package macro generates cmake config files for your package
-## Declare things to be passed to dependent projects
-## INCLUDE_DIRS: uncomment this if you package contains header files
-## LIBRARIES: libraries you create in this project that dependent projects also need
-## CATKIN_DEPENDS: catkin_packages dependent projects also need
-## DEPENDS: system dependencies of this project that dependent projects also need
+# Configure Catkin dependencies
 catkin_package(
   CATKIN_DEPENDS
     roscpp
     std_msgs
 )
 
-###########
-## Build ##
-###########
-
-## Specify additional locations of header files
-## Your package locations should be listed before other locations
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
 )
 
-## Declare a C++ executable
-## With catkin_make all packages are built within a single CMake context
-## The recommended prefix ensures that target names across packages don't collide
+###############################
+# Basic, non-qt talker/listener
 add_executable(listener src/listener.cpp)
 add_executable(talker src/talker.cpp)
 
-add_executable(listener_qt src/listener_qt.cpp)
-add_executable(talker_qt src/talker_qt.cpp)
-qt5_use_modules(listener_qt Core)
-qt5_use_modules(talker_qt Core)
 
-# Run MOC
-set(MOC_HDRS include/qml_mediator.h)
-qt5_wrap_cpp(MOC_SRCS ${MOC_HDRS})
-
-# Run RCC
-set(RCC_FILES src/display.qrc)
-qt5_add_resources(RCC_SOURCES ${RCC_FILES})
-
-add_executable(listener_qml src/listener_qml.cpp ${MOC_SRCS} ${RCC_SOURCES})
-add_executable(talker_qml src/talker_qml.cpp ${MOC_SRCS} ${RCC_SOURCES})
-qt5_use_modules(listener_qml Core Qml Quick)
-qt5_use_modules(talker_qml Core Qml Quick)
-
-# Run MOC
-set(MOC_HDRS include/mainwindow.h)
-qt5_wrap_cpp(MOC_SRCS ${MOC_HDRS})
-
-# Wrap .ui files
-set(UI_FILES ui/mainwindow.ui)
-qt5_wrap_ui(UI_SRCS ${UI_FILES})
-
-add_executable(talker_wig src/talker_wig.cpp src/mainwindow.cpp ${MOC_SRCS} ${UI_SRCS})
-add_executable(listener_wig src/listener_wig.cpp src/mainwindow.cpp ${MOC_SRCS} ${UI_SRCS})
-qt5_use_modules(talker_wig Widgets)
-qt5_use_modules(listener_wig Widgets)
-
-## Rename C++ executable without prefix
-## The above recommended prefix causes long target names, the following renames the
-## target back to the shorter version for ease of user use
-## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
-# set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
-
-## Specify libraries to link a library or executable target against
 target_link_libraries(listener
   ${catkin_LIBRARIES}
 )
@@ -107,6 +48,18 @@ target_link_libraries(listener
 target_link_libraries(talker
   ${catkin_LIBRARIES}
 )
+
+################################################
+# Cmd line talker/listener running qt event loop
+add_executable(listener_qt src/listener_qt.cpp)
+add_executable(talker_qt src/talker_qt.cpp)
+
+# Configure Qt5 Modules
+# Equivalent to doing
+# Qt += Core
+# In Qt .pro file
+qt5_use_modules(listener_qt Core)
+qt5_use_modules(talker_qt Core)
 
 target_link_libraries(listener_qt
   ${catkin_LIBRARIES}
@@ -116,6 +69,28 @@ target_link_libraries(talker_qt
   ${catkin_LIBRARIES}
 )
 
+######################################
+# Talker and Listener using QML gui
+
+# Run MOC on headers of Q_OBJECT classes
+set(MOC_HDRS include/qml_mediator.h)
+qt5_wrap_cpp(MOC_SRCS ${MOC_HDRS})
+
+# Run RCC on QRC file
+set(RCC_FILES src/display.qrc)
+qt5_add_resources(RCC_SOURCES ${RCC_FILES})
+
+# Build executables with source, MOC result files, RCC result files
+add_executable(listener_qml src/listener_qml.cpp ${MOC_SRCS} ${RCC_SOURCES})
+add_executable(talker_qml src/talker_qml.cpp ${MOC_SRCS} ${RCC_SOURCES})
+
+# Configure Qt5 Modules
+# Equivalent to doing
+# Qt += Core Qml Quick
+# In Qt .pro file
+qt5_use_modules(listener_qml Core Qml Quick)
+qt5_use_modules(talker_qml Core Qml Quick)
+
 target_link_libraries(listener_qml
   ${catkin_LIBRARIES}
 )
@@ -124,6 +99,28 @@ target_link_libraries(talker_qml
   ${catkin_LIBRARIES}
 )
 
+########################################
+# Talker and Listener using QWidgets gui
+
+# Run MOC on headers of Q_OBJECT classes
+set(MOC_HDRS include/mainwindow.h)
+qt5_wrap_cpp(MOC_SRCS ${MOC_HDRS})
+
+# Run UIC on ui definitions
+set(UI_FILES ui/mainwindow.ui)
+qt5_wrap_ui(UI_SRCS ${UI_FILES})
+
+# Build executables with source, MOC result files, UIC result files
+add_executable(talker_wig src/talker_wig.cpp src/mainwindow.cpp ${MOC_SRCS} ${UI_SRCS})
+add_executable(listener_wig src/listener_wig.cpp src/mainwindow.cpp ${MOC_SRCS} ${UI_SRCS})
+
+# Configure Qt5 Modules
+# Equivalent to doing
+# Qt += Core Widgets
+# In Qt .pro file
+qt5_use_modules(talker_wig Core Widgets)
+qt5_use_modules(listener_wig Core Widgets)
+
 target_link_libraries(talker_wig
   ${catkin_LIBRARIES}
 )
@@ -131,51 +128,3 @@ target_link_libraries(talker_wig
 target_link_libraries(listener_wig
   ${catkin_LIBRARIES}
 )
-
-#############
-## Install ##
-#############
-
-# all install targets should use catkin DESTINATION variables
-# See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
-
-## Mark executable scripts (Python etc.) for installation
-## in contrast to setup.py, you can choose the destination
-# install(PROGRAMS
-#   scripts/my_python_script
-#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
-
-## Mark executables and/or libraries for installation
-# install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_node
-#   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
-
-## Mark cpp header files for installation
-# install(DIRECTORY include/${PROJECT_NAME}/
-#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#   FILES_MATCHING PATTERN "*.h"
-#   PATTERN ".svn" EXCLUDE
-# )
-
-## Mark other files for installation (e.g. launch and bag files, etc.)
-# install(FILES
-#   # myfile1
-#   # myfile2
-#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-# )
-
-#############
-## Testing ##
-#############
-
-## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_pubsub.cpp)
-# if(TARGET ${PROJECT_NAME}-test)
-#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
-# endif()
-
-## Add folders to be run by python nosetests
-# catkin_add_nosetests(test)
